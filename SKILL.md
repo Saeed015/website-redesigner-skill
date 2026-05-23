@@ -177,6 +177,27 @@ Image Map:
   service-card-2 → https://example.com/service.jpg (scraped)
 ```
 
+**Step 6 — Favicon: pull from the live site, don't design from scratch.**
+
+The existing favicon is part of the brand whether the client thinks of it that way or not — recognized in tabs, bookmarks, and search-result snippets. **Default to pulling it.** Only design a new one if the client explicitly asks for a favicon rebrand. (Trillium build lesson: a hand-designed teal "T" monogram had to be ripped out and replaced with the live site's existing tooth-outline favicon — wasted work.)
+
+1. **Find the master.** Check the live site in this order — stop at the first hi-res hit:
+   - The `<link rel="icon" href="…">` and `<link rel="apple-touch-icon" …>` tags in the live page `<head>` (often point to the largest source).
+   - For WordPress sites: search `wp-content/uploads/` for `Favicon*.png`, `cropped-Favicon*.png`, `cropped-cropped-*Favicon*.png` — the WP customizer keeps a hi-res master here (commonly 512×512). This is usually the best source.
+   - `[domain]/favicon.ico` (legacy fallback — multi-res but small).
+2. **Sample the background color** from a corner pixel of the master (via PIL: `Image.open(...).convert("RGB").getpixel((4,4))`). You'll need the hex for `theme-color` and `site.webmanifest`.
+3. **Resample to all required sizes from the master** (PIL `Image.LANCZOS`) and save under `output/[domain]/`:
+   - `favicon-16x16.png`, `favicon-32x32.png`
+   - `apple-touch-icon.png` (180×180)
+   - `android-chrome-192x192.png`, `android-chrome-512x512.png`
+   - Multi-resolution `favicon.ico` — PIL: `img16.save("favicon.ico", format="ICO", sizes=[(16,16),(32,32),(48,48)], append_images=[img32, img48])`
+4. **Write a `site.webmanifest`** with `theme_color` = sampled hex, `name` / `short_name`, the two `android-chrome-*` icons, `display: "standalone"`, `start_url: "/"`.
+5. **Save the master** to `assets/images/brand/favicon-master.png` so future re-renders don't need to re-fetch the live site.
+6. **Don't synthesize an SVG favicon unless the live site already uses one.** Adding `favicon.svg` when the source is raster-only creates a maintenance fork (the SVG can drift from the PNGs). Keep ICO + PNGs only.
+7. **Wire the favicon block into every page's `<head>`** — see the SEO head template in Phase 6.
+
+Tool note: **PIL/Pillow is the safe default** — works without ImageMagick or `rsvg-convert`, which often aren't installed. A small `build_favicon.py` builder (read master → resample → write all sizes → patch every `output/*.html` to insert the favicon `<link>` block after the canonical) is the right shape: idempotent, re-runnable, parity-safe with the builder source.
+
 **Image integrity rules (do not violate these even if the user says "all"):**
 - **Never AI-generate a face for a named real person.** Team members, dentists, attorneys, named staff — if you have no real photo, use an initials/monogram avatar or a styled placeholder and ask the client to supply real headshots. A fabricated face of a real, named individual is a misrepresentation, not a stand-in.
 - **Never AI-generate documentary photos** — volunteer trips, charity work, event coverage, "our community" imagery. These make truth claims about things that happened. If the real photos can't be scraped, show the verbatim intro copy with a "more photos available — contact us" note rather than inventing scenes.
@@ -309,6 +330,10 @@ About, Contact, Team, Pricing, and any other supporting pages identified in the 
 <meta name="twitter:title" content="[same as title]">
 <meta name="twitter:description" content="[same as description]">
 <meta name="twitter:image" content="[same as og:image]">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="[sampled hex from favicon master — see Phase 3.5 Step 6]">
 ```
 Source priority: scraped `<title>` and `<meta name="description">` first; fall back to H1 + page purpose. If neither is available, use `[TODO: add page title]` — never invent one.
 
@@ -443,6 +468,7 @@ output/
 - **Every edit to a client's own copy is a flag, not a silent change** — log it with before→after for sign-off
 - **Bump the `?v=N` cache-buster site-wide on every CSS/JS change** — and suspect a stale cache first when a client says a fixed thing still looks wrong
 - **Menu/nav labels must be verbatim with the live site** — don't invent groupings (e.g. a "More Services" bucket) or abbreviate labels; mirror the live site's own categorization
+- **Pull the favicon from the live site — don't design a new one** unless the client explicitly asks for a favicon rebrand. The live favicon is recognized brand; replacing it is a rebrand decision, not an asset task. See Phase 3.5 Step 6 for the resample-and-wire pipeline.
 
 ---
 
