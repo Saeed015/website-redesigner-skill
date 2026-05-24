@@ -469,6 +469,7 @@ output/
 - **Bump the `?v=N` cache-buster site-wide on every CSS/JS change** — and suspect a stale cache first when a client says a fixed thing still looks wrong
 - **Menu/nav labels must be verbatim with the live site** — don't invent groupings (e.g. a "More Services" bucket) or abbreviate labels; mirror the live site's own categorization
 - **Pull the favicon from the live site — don't design a new one** unless the client explicitly asks for a favicon rebrand. The live favicon is recognized brand; replacing it is a rebrand decision, not an asset task. See Phase 3.5 Step 6 for the resample-and-wire pipeline.
+- **Google Maps URLs must query by `Business+Name,+Address`, not address alone** — applies to both the `<iframe class="map-embed" src="…/maps?q=…&output=embed">` and every click-to-open address link (`<a href="…/maps?q=…">`) in the topbar/footer/contact section. The business-name query resolves to the verified GBP, so the pin is labelled with the business and the click lands on the live listing (hours, reviews, Directions) — a real NAP-consistency / outbound-entity / engagement win for local SEO. See Field notes for the URL shape.
 
 ---
 
